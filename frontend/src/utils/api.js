@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // to use the backend url
 const API = axios.create({
-  baseURL: "http://localhost:4000/api",
+  baseURL: "https://webgen-backend-one.vercel.app/api",
   headers: { "Content-Type": "application/json"},
 });
 
