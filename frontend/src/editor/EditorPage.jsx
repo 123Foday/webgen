@@ -6,7 +6,7 @@ import EditorSidebar from "./components/sidebar/EditorSidebar";
 import Recursive from "./components/canvas/recursive";
 import API from "../utils/api";
 import { genId } from "./utils/editor-constants";
-import { htmlToEditorJson } from "../utils/htmlToEditorJson";
+// import { htmlToEditorJson } from "../utils/htmlToEditorJson";
 import {
   Copy, Trash2, Clipboard, CopyPlus, MoveUp, MoveDown,
   BoxSelect, Layers, Rows3, Columns3, Grid3X3, ZoomIn, ZoomOut,
