@@ -174,7 +174,7 @@ const Navbar = () => {
           <div className={s.mobileDivider}>
             {isAuthed ? (
               <>
-                {accountLinks.map(({ label, icon: to, iconClass }) => (
+                {accountLinks.map(({ label, icon: Icon, to, iconClass }) => (
                   <Link
                     key={to}
                     to={to}
