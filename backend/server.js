@@ -14,7 +14,7 @@ const app = express();
 
 // Middlewares
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: "https://webgen-frontend-ai.vercel.app",
   credentials: true
 }));
 app.use(express.json({ limit: "1mb" }));
