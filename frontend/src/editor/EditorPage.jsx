@@ -6,6 +6,7 @@ import EditorSidebar from "./components/sidebar/EditorSidebar";
 import Recursive from "./components/canvas/recursive";
 import API from "../utils/api";
 import { genId } from "./utils/editor-constants";
+import { htmlToEditorJson } from "../utils/htmlToEditorJson";
 import {
   Copy, Trash2, Clipboard, CopyPlus, MoveUp, MoveDown,
   BoxSelect, Layers, Rows3, Columns3, Grid3X3, ZoomIn, ZoomOut,
@@ -272,8 +273,17 @@ const EditorPageInner = () => {
         console.log("editorContent:", proj.editorContent);
         setProject(proj);
         if (proj.editorContent) {
-          const parsed = JSON.parse(proj.editorContent);
-          dispatch({ type: "LOAD_DATA", payload: { elements: parsed, withLive: false } });
+          try {
+            const parsed = JSON.parse(proj.editorContent);
+            dispatch({ type: "LOAD_DATA", payload: { elements: parsed, withLive: false } });
+          } catch (err) {
+            console.warn("Invalid stored editorContent, falling back to HTML conversion.", err);
+            const converted = htmlToEditorJson(proj.html || "");
+            dispatch({ type: "LOAD_DATA", payload: { elements: converted, withLive: false } });
+          }
+        } else if (proj.html) {
+          const converted = htmlToEditorJson(proj.html);
+          dispatch({ type: "LOAD_DATA", payload: { elements: converted, withLive: false } });
         }
       } catch (err) {
         console.error("Failed to load project:", err);
