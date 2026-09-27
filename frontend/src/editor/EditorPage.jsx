@@ -6,7 +6,6 @@ import EditorSidebar from "./components/sidebar/EditorSidebar";
 import Recursive from "./components/canvas/recursive";
 import API from "../utils/api";
 import { genId } from "./utils/editor-constants";
-import { htmlToEditorJson } from "../utils/htmlToEditorJson";
 import {
   Copy, Trash2, Clipboard, CopyPlus, MoveUp, MoveDown,
   BoxSelect, Layers, Rows3, Columns3, Grid3X3, ZoomIn, ZoomOut,
@@ -271,17 +270,8 @@ const EditorPageInner = () => {
         const proj = res.data.project || res.data;
         setProject(proj);
         if (proj.editorContent) {
-          try {
-            const parsed = JSON.parse(proj.editorContent);
-            dispatch({ type: "LOAD_DATA", payload: { elements: parsed, withLive: false } });
-          } catch (err) {
-            console.warn("Invalid stored editorContent, falling back to HTML conversion.", err);
-            const converted = htmlToEditorJson(proj.html || "");
-            dispatch({ type: "LOAD_DATA", payload: { elements: converted, withLive: false } });
-          }
-        } else if (proj.html) {
-          const converted = htmlToEditorJson(proj.html);
-          dispatch({ type: "LOAD_DATA", payload: { elements: converted, withLive: false } });
+          const parsed = JSON.parse(proj.editorContent);
+          dispatch({ type: "LOAD_DATA", payload: { elements: parsed, withLive: false } });
         }
       } catch (err) {
         console.error("Failed to load project:", err);
@@ -383,25 +373,25 @@ const EditorPageInner = () => {
   };
 
   const handleSave = useCallback(async () => {
-  if (!id) return;
-  setIsSaving(true);
-  try {
-    const elements = window.__currentEditorElements;
-    if (!elements) return;
+    if (!id) return;
+    setIsSaving(true);
+    try {
+      const elements = window.__currentEditorElements;
+      if (!elements) return;
 
-    const html = elementsToHtmlPage(elements);
+      const html = elementsToHtmlPage(elements);
 
-    await API.patch(`/projects/${id}`, {
-      editorContent: JSON.stringify(elements),
-      html,
-    });
-    console.log("Saved successfully");
-  } catch (err) {
-    console.error("Save failed:", err.response?.data);
-  } finally {
-    setIsSaving(false);
-  }
-}, [id]);
+      await API.patch(`/projects/${id}`, {
+        editorContent: JSON.stringify(elements),
+        html,
+      });
+      console.log("Saved successfully");
+    } catch (err) {
+      console.error("Save failed:", err.response?.data);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [id]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#08090a", overflow: "hidden", color: "#fff" }}>
