@@ -11,6 +11,7 @@ import {
   BoxSelect, Layers, Rows3, Columns3, Grid3X3, ZoomIn, ZoomOut,
   ChevronUp, ChevronDown,
 } from "lucide-react";
+import IframeEditor from "./IframeEditor";
 
 // ── Canvas + context menu (inner component, inside EditorProvider) ─────────
 
@@ -37,6 +38,7 @@ const EditorCanvas = ({ projectId, projectName, onSave, isSaving }) => {
     "--theme-accent": theme.accent || "#f43f5e",
     "--theme-radius": theme.borderRadius || "8px",
   };
+
 
   // ── Close context menu on outside click ────────────────────────────────
   useEffect(() => {
@@ -183,12 +185,16 @@ const EditorCanvas = ({ projectId, projectName, onSave, isSaving }) => {
                 backgroundImage: showGrid && !isPreview ? "radial-gradient(circle,rgba(255,255,255,0.04) 1px,transparent 1px)" : undefined,
                 backgroundSize: showGrid && !isPreview ? "24px 24px" : undefined,
               }}
+              
             >
               {state.editor.elements.map(el => <Recursive key={el.id} element={el} />)}
             </div>
           </div>
         </div>
       </div>
+
+      {/* ── Sidebar ─────────────────────────────────────────────────────── */}
+      {!isPreview && <EditorSidebar />}
 
       {/* ── Right-click context menu ─────────────────────────────────────── */}
       {ctxMenu && !isPreview && (
@@ -238,29 +244,13 @@ const EditorCanvas = ({ projectId, projectName, onSave, isSaving }) => {
 const EditorPageInner = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { dispatch, state } = useEditor();
+  const { dispatch } = useEditor();
   const [project, setProject] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [zoom, setZoom] = useState(100);
   const [showGrid, setShowGrid] = useState(false);
-  const [isSmallScreen, setIsSmallScreen] = useState(() => window.innerWidth <= 900);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth > 900);
-
-  useEffect(() => {
-    const handleResize = () => {
-      const smallScreen = window.innerWidth <= 900;
-      setIsSmallScreen(smallScreen);
-      if (smallScreen) {
-        setIsSidebarOpen(false);
-      } else {
-        setIsSidebarOpen(true);
-      }
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  const [iframeControls, setIframeControls] = useState(null);
+  const [editorMode, setEditorMode] = useState("visual"); // "visual" | "html"
 
   // Load project + existing editor content
   useEffect(() => {
@@ -268,6 +258,8 @@ const EditorPageInner = () => {
       try {
         const res = await API.get(`/projects/${id}`);
         const proj = res.data.project || res.data;
+        console.log("Loaded project:", proj);
+        console.log("editorContent:", proj.editorContent);
         setProject(proj);
         if (proj.editorContent) {
           const parsed = JSON.parse(proj.editorContent);
@@ -278,6 +270,23 @@ const EditorPageInner = () => {
       }
     };
     load();
+  }, [id]);
+
+  const handleIframeSave = useCallback(async (serializedHtml) => {
+    if (!id) return;
+    setIsSaving(true);
+    try {
+      await API.patch(`/projects/${id}`, {
+        html: serializedHtml,
+        editorContent: "",
+      });
+      setProject(prev => (prev ? { ...prev, html: serializedHtml } : prev));
+      console.log("HTML editor saved successfully");
+    } catch (err) {
+      console.error("HTML save failed:", err.response?.data);
+    } finally {
+      setIsSaving(false);
+    }
   }, [id]);
 
   const elementToHtml = (element) => {
@@ -398,15 +407,15 @@ const EditorPageInner = () => {
       <EditorNavigation
         projectId={id}
         projectName={project?.name}
-        onSave={handleSave}
+        onSave={editorMode === "visual" ? handleSave : () => document.dispatchEvent(new CustomEvent('iframe-save'))}
         isSaving={isSaving}
         zoom={zoom} setZoom={setZoom}
         showGrid={showGrid} setShowGrid={setShowGrid}
-        isSmallScreen={isSmallScreen}
-        isSidebarOpen={isSidebarOpen}
-        toggleSidebar={() => setIsSidebarOpen(open => !open)}
+        editorMode={editorMode}
+        onModeChange={setEditorMode}
+        iframeControls={iframeControls}
       />
-      <div style={{ display: "flex", flex: 1, minHeight: 0, position: "relative" }}>
+      {editorMode === "visual" ? (
         <EditorCanvas
           projectId={id}
           projectName={project?.name}
@@ -416,29 +425,15 @@ const EditorPageInner = () => {
           showGrid={showGrid} setShowGrid={setShowGrid}
         />
 
-        {!state.editor.previewMode && !state.editor.liveMode && (
-          isSmallScreen ? (
-            isSidebarOpen && (
-              <>
-                <div
-                  onClick={() => setIsSidebarOpen(false)}
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    background: "rgba(0,0,0,0.45)",
-                    zIndex: 20,
-                  }}
-                />
-                <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, zIndex: 21 }}>
-                  <EditorSidebar isMobile isOpen={isSidebarOpen} />
-                </div>
-              </>
-            )
-          ) : (
-            <EditorSidebar />
-          )
-        )}
-      </div>
+      ) : (
+        <IframeEditor
+          key={editorMode}
+          project={project}
+          onSave={handleIframeSave}
+          isSaving={isSaving}
+          onUndoChange={setIframeControls}
+        />
+      )}
     </div>
   );
 };

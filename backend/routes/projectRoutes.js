@@ -1,6 +1,6 @@
 import express from 'express';
 import { requireAuth } from '../middlewares/auth.js';
-import { create, generate, get, list, loadOwnedProject, remove, update } from '../controllers/projectController.js';
+import { create, fetchUrl, generate, get, list, loadOwnedProject, remove, update } from '../controllers/projectController.js';
 import { githubRoute, vercelRoute } from './projectDeploy.js';
 
 const projectRouter = express.Router();
@@ -13,6 +13,7 @@ projectRouter.patch('/:id', requireAuth, update);
 
 projectRouter.delete('/:id', requireAuth, remove);
 projectRouter.post('/:id/generate', requireAuth, generate);
+projectRouter.post('/fetch-url', requireAuth, fetchUrl);
 
 // to deploy the project(on vercel) and to create a repo on github
 projectRouter.post('/:id/github', requireAuth, githubRoute(loadOwnedProject));

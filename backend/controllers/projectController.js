@@ -259,3 +259,58 @@ export async function generate(req, res, next) {
     next(err);
   }
 }
+
+export async function fetchUrl(req, res, next) {
+  try {
+    const { url } = req.body;
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({ error: 'URL is required.' });
+    }
+
+    // Basic URL validation
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      return res.status(400).json({ error: 'Invalid URL format.' });
+    }
+
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+      return res.status(400).json({ error: 'Only http and https URLs are supported.' });
+    }
+
+    const response = await fetch(parsedUrl.toString(), {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!response.ok) {
+      return res.status(502).json({ error: `Failed to fetch URL: ${response.status} ${response.statusText}` });
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('text/html')) {
+      return res.status(415).json({ error: 'URL does not return HTML content.' });
+    }
+
+    let html = await response.text();
+
+    // Rewrite relative URLs to absolute so assets load correctly in the iframe
+    const base = `${parsedUrl.protocol}//${parsedUrl.host}`;
+    html = html
+      .replace(/src="(?!http|\/\/|data:)([^"]+)"/g, `src="${base}/$1"`)
+      .replace(/href="(?!http|\/\/|#|mailto:)([^"]+)"/g, `href="${base}/$1"`)
+      .replace(/url\((?!['"]?(?:http|\/\/|data:))['"]?([^'")]+)['"]?\)/g, `url(${base}/$1)`);
+
+    res.json({ html, sourceUrl: parsedUrl.toString() });
+  } catch (err) {
+    if (err.name === 'TimeoutError') {
+      return res.status(504).json({ error: 'Request timed out. The URL took too long to respond.' });
+    }
+    next(err);
+  }
+}

@@ -4,7 +4,7 @@ import { useEditor } from "../../context/editor-provider";
 import {
   Monitor, Tablet, Smartphone, Eye, EyeOff,
   Undo2, Redo2, Save, ArrowLeft, ZoomIn, ZoomOut,
-  Grid3X3, Clipboard, Menu, X,
+  Grid3X3, Clipboard,
 } from "lucide-react";
 import API from "../../../utils/api";
 import { useEffect } from "react";
@@ -39,13 +39,38 @@ const NavBtn = ({ onClick, title, children, disabled, accent }) => (
   </button>
 );
 
-const EditorNavigation = ({ projectId, projectName, onSave, isSaving, zoom, setZoom, showGrid, setShowGrid, isSmallScreen, isSidebarOpen, toggleSidebar }) => {
-  const { dispatch, state } = useEditor();
-  const navigate = useNavigate();
+const EditorNavigation = ({
+  projectId, projectName, onSave, isSaving,
+  zoom, setZoom, showGrid, setShowGrid,
+  editorMode, onModeChange, iframeControls
+}) => {
+  const { state, dispatch } = useEditor();
   const device = state.editor.device;
-  const isPreview = state.editor.previewMode;
-  const canUndo = state.history.currentIndex > 0;
-  const canRedo = state.history.currentIndex < state.history.history.length - 1;
+
+  // Use iframe controls when in HTML mode, editor state when in visual mode
+  const canUndo = editorMode === "html"
+    ? iframeControls?.canUndo
+    : state.history.currentIndex > 0;
+
+  const canRedo = editorMode === "html"
+    ? iframeControls?.canRedo
+    : state.history.currentIndex < state.history.history.length - 1;
+
+  const handleUndo = editorMode === "html"
+    ? iframeControls?.onUndo
+    : () => dispatch({ type: "UNDO" });
+
+  const handleRedo = editorMode === "html"
+    ? iframeControls?.onRedo
+    : () => dispatch({ type: "REDO" });
+
+  const isPreview = editorMode === "html"
+    ? iframeControls?.isPreview
+    : state.editor.previewMode;
+
+  const handlePreviewToggle = editorMode === "html"
+    ? iframeControls?.onPreviewToggle
+    : () => dispatch({ type: "TOGGLE_PREVIEW_MODE" });
 
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(projectName || "Untitled Project");
@@ -121,6 +146,23 @@ const EditorNavigation = ({ projectId, projectName, onSave, isSaving, zoom, setZ
 
         <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.08)" }} />
 
+        {/* Mode toggle */}
+        <div style={{ display: "flex", alignItems: "center", padding: 3, background: "rgba(255,255,255,0.04)", borderRadius: 9, border: "1px solid rgba(255,255,255,0.06)", marginRight: 8 }}>
+          {[["visual", "⬡ Visual"], ["html", "🌐 HTML"]].map(([mode, label]) => (
+            <button key={mode} onClick={() => onModeChange(mode)}
+              style={{
+                padding: "4px 12px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, transition: "all 0.15s",
+                background: editorMode === mode ? "rgba(99,102,241,0.25)" : "transparent",
+                color: editorMode === mode ? "#a5b4fc" : "rgba(255,255,255,0.4)",
+              }}
+              onMouseEnter={e => { if (editorMode !== mode) e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
+              onMouseLeave={e => { if (editorMode !== mode) e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* Zoom */}
         <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
           <NavBtn onClick={() => setZoom(z => Math.max(z - 10, 25))} title="Zoom out (Ctrl -)"><ZoomOut size={13} /></NavBtn>
@@ -143,22 +185,16 @@ const EditorNavigation = ({ projectId, projectName, onSave, isSaving, zoom, setZ
 
       {/* Right: undo/redo + preview + save */}
       <div style={{ display: "flex", alignItems: "center", gap: 6, flex: "0 0 auto" }}>
-        {isSmallScreen && (
-          <NavBtn onClick={toggleSidebar} title={isSidebarOpen ? "Hide sidebar" : "Show sidebar"}>
-            {isSidebarOpen ? <X size={13} /> : <Menu size={13} />}
-            {isSidebarOpen ? "Close" : "Sidebar"}
-          </NavBtn>
-        )}
-
-        <NavBtn onClick={() => dispatch({ type: "UNDO" })} disabled={!canUndo} title="Undo (Ctrl+Z)"><Undo2 size={13} /></NavBtn>
-        <NavBtn onClick={() => dispatch({ type: "REDO" })} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)"><Redo2 size={13} /></NavBtn>
+        <NavBtn onClick={() => handleUndo?.()} disabled={!canUndo} title="Undo (Ctrl+Z)">
+          <Undo2 size={13} />
+        </NavBtn>
+        <NavBtn onClick={() => handleRedo?.()} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)">
+          <Redo2 size={13} />
+        </NavBtn>
 
         <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.08)" }} />
 
-        <NavBtn
-          onClick={() => dispatch({ type: "TOGGLE_PREVIEW_MODE" })}
-          title={isPreview ? "Exit Preview" : "Preview"}
-        >
+        <NavBtn onClick={() => handlePreviewToggle?.()} title={isPreview ? "Exit Preview" : "Preview"}>
           {isPreview ? <EyeOff size={13} /> : <Eye size={13} />}
           {isPreview ? "Exit" : "Preview"}
         </NavBtn>

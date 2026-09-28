@@ -89,4 +89,6 @@ export const createCheckoutSession = (packageId) =>
 export const verifySession = (sessionId) =>
   body(API.post("/payments/verify-session", { sessionId }));
 
+export const fetchExternalUrl = (url) => API.post('/projects/fetch-url', { url });
+
 export default API;
