@@ -402,7 +402,6 @@ const EditorPageInner = () => {
     }
   }, [id]);
 
-  const navigate = useNavigate();
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#08090a", overflow: "hidden", color: "#fff" }}>
       {/* Back Button */}
