@@ -45,6 +45,7 @@ const EditorNavigation = ({
   editorMode, onModeChange, iframeControls
 }) => {
   const { state, dispatch } = useEditor();
+  const navigate = useNavigate();
   const device = state.editor.device;
 
   // Use iframe controls when in HTML mode, editor state when in visual mode
