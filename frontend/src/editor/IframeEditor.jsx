@@ -725,10 +725,6 @@ const IframeEditor = ({ project, onSave, isSaving, onUndoChange }) => {
                         style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: urlLoading || !urlInput.trim() ? "rgba(255,255,255,0.08)" : "rgba(99,102,241,0.8)", color: urlLoading || !urlInput.trim() ? "rgba(255,255,255,0.3)" : "#fff", fontSize: 13, fontWeight: 600, cursor: urlLoading || !urlInput.trim() ? "not-allowed" : "pointer", flexShrink: 0, transition: "all 0.15s" }}>
                         {urlLoading ? "Loading…" : "Load"}
                     </button>
-                    <button onClick={handleSave} disabled={isSaving}
-                        style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: isSaving ? "rgba(255,255,255,0.08)" : "linear-gradient(135deg,#f43f5e,#f97316,#f59e0b)", color: isSaving ? "rgba(255,255,255,0.3)" : "#111", fontSize: 13, fontWeight: 700, cursor: isSaving ? "not-allowed" : "pointer", flexShrink: 0 }}>
-                        {isSaving ? "Saving…" : "Save"}
-                    </button>
                 </div>
 
                 {/* URL error */}

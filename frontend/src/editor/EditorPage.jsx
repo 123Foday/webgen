@@ -402,8 +402,29 @@ const EditorPageInner = () => {
     }
   }, [id]);
 
+  const navigate = useNavigate();
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#08090a", overflow: "hidden", color: "#fff" }}>
+      {/* Back Button */}
+      <button
+        onClick={() => navigate(-1)}
+        style={{
+          position: "absolute",
+          top: 16,
+          left: 16,
+          zIndex: 10000,
+          background: "rgba(255,255,255,0.08)",
+          color: "#fff",
+          border: "none",
+          borderRadius: 6,
+          padding: "6px 16px",
+          fontSize: 14,
+          cursor: "pointer"
+        }}
+        title="Go Back"
+      >
+        ← Back
+      </button>
       <EditorNavigation
         projectId={id}
         projectName={project?.name}
@@ -424,7 +445,6 @@ const EditorPageInner = () => {
           zoom={zoom} setZoom={setZoom}
           showGrid={showGrid} setShowGrid={setShowGrid}
         />
-
       ) : (
         <IframeEditor
           key={editorMode}
